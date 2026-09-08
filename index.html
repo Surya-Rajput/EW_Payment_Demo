@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>easyWins &mdash; Prototype</title>
+<meta name="description" content="Clickable prototype of the easyWins payment streak journey.">
+<!-- Keeps a brand-carrying payment mockup out of search results. -->
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
+<meta http-equiv="Cache-Control" content="no-store">
+<!-- ?v= is bumped whenever these change, so a stale browser cache can never
+     pair a new script with an old page. -->
+<link rel="stylesheet" href="styles.css?v=4">
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- ============================================================
+       PRESENTER CONTROLS
+       Deliberately styled as tooling, not product, so nobody in the
+       room mistakes it for part of the app.
+       ============================================================ -->
+  <aside class="presenter" id="presenter">
+
+    <div class="presenter-head">
+      <div>
+        <span class="presenter-title">Presenter controls</span>
+        <span class="presenter-note">Not part of the product</span>
+      </div>
+      <button class="presenter-close" id="presenterClose" aria-label="Hide controls">&times;</button>
+    </div>
+
+    <div class="pgroup">
+      <span class="plabel">Jump to state</span>
+      <div class="pstates">
+        <button data-preset="fresh"><kbd>1</kbd> Fresh customer, zero progress</button>
+        <button data-preset="mid"><kbd>2</kbd> Mid-streak, 3 of 5</button>
+        <button data-preset="nearly"><kbd>3</kbd> One from milestone</button>
+        <button data-preset="grace"><kbd>4</kbd> Missed payment, grace open</button>
+        <button data-preset="saved"><kbd>5</kbd> Streak saved</button>
+        <button data-preset="lapsed"><kbd>6</kbd> Reset after expired window</button>
+        <button data-preset="autopay"><kbd>7</kbd> Enrolled in automatic payments</button>
+        <button data-preset="milestone"><kbd>8</kbd> Milestone reached</button>
+      </div>
+    </div>
+
+    <div class="pgroup">
+      <span class="plabel">Send a notification</span>
+      <div class="pbtns">
+        <button data-notif="payday">Payday morning</button>
+        <button data-notif="due">Two days before due</button>
+        <button data-notif="milestone">Milestone reached</button>
+        <button data-notif="grace">Grace window open</button>
+        <button data-notif="saved">Streak saved</button>
+      </div>
+      <p class="phint">The big button sends whichever fits the current state.</p>
+    </div>
+
+    <div class="pgroup">
+      <span class="plabel">Simulated clock</span>
+      <div class="preadout">
+        <div><span>Today</span><b id="simDate">—</b></div>
+        <div><span>Due</span><b id="simDue">—</b></div>
+        <div><span>easyWins</span><b id="simWins">—</b></div>
+        <div><span>Streak</span><b id="simState">—</b></div>
+        <div><span>Auto-pay</span><b id="simAuto">—</b></div>
+      </div>
+      <button class="pwide" id="advanceDayBtn"><kbd>D</kbd> Advance one day</button>
+    </div>
+
+    <div class="pgroup">
+      <span class="plabel">Options</span>
+      <label class="pcheck"><input type="checkbox" id="optAutofill" checked> Autofill card details</label>
+      <label class="pcheck"><input type="checkbox" id="optSound" checked> Notification sound</label>
+      <label class="pcheck"><input type="checkbox" id="optFast"> Fast mode (skip processing)</label>
+    </div>
+
+    <div class="pgroup">
+      <button class="preset" id="resetBtn"><kbd>R</kbd> Reset everything</button>
+    </div>
+
+    <p class="pfoot">
+      <kbd>1</kbd>–<kbd>8</kbd> states &middot; <kbd>N</kbd> notify &middot; <kbd>D</kbd> +1 day &middot;
+      <kbd>C</kbd> clear &middot; <kbd>P</kbd> panel &middot; <kbd>R</kbd> reset &middot; <kbd>Esc</kbd> close sheet
+    </p>
+  </aside>
+
+  <button class="presenter-open" id="presenterOpen" aria-label="Show presenter controls">&#9881;</button>
+
+  <!-- ===== Phone ===== -->
+  <div class="phone-wrap" id="phoneWrap">
+    <div class="phone">
+      <div class="phone-screen" id="phoneScreen">
+
+        <main class="viewport" id="viewport"></main>
+
+        <div class="statusbar" id="statusbar">
+          <span class="sb-time" id="sbTime">9:41</span>
+          <span class="sb-icons">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7.5h2.2v3.5H1zM5.4 5.2h2.2V11H5.4zM9.8 2.8H12V11H9.8zM14.2 0h2.2v11h-2.2z"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.9 5.6 8.4a3.4 3.4 0 0 1 4.8 0zM8 6.2c-1.5 0-2.9.6-3.9 1.6L2.8 6.4a7.4 7.4 0 0 1 10.4 0l-1.3 1.4A5.4 5.4 0 0 0 8 6.2zM8 2.4c2.5 0 4.8 1 6.5 2.6L15.8 3.6a10.9 10.9 0 0 0-15.6 0L1.5 5A9.1 9.1 0 0 1 8 2.4z"/></svg>
+            <span class="sb-batt"><i></i></span>
+          </span>
+        </div>
+
+        <div class="dynamic-island"></div>
+        <div class="home-indicator" id="homeIndicator"></div>
+
+      </div>
+    </div>
+
+    <p class="phone-caption" id="phoneCaption">Send a notification to begin</p>
+  </div>
+
+  <!-- ===== Notification sender: the one control used constantly ===== -->
+  <div class="sender" id="sender">
+    <span class="sender-label">Presenter</span>
+    <button class="sender-btn" id="sendNotifBtn">
+      <span class="sender-bell">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+        </svg>
+      </span>
+      <span>Send notification</span>
+    </button>
+    <button class="sender-clear" id="clearNotifBtn">Clear</button>
+    <span class="sender-count" id="sendNotifCount">0 on screen</span>
+    <span class="sender-hint"><kbd>N</kbd> send &middot; <kbd>P</kbd> all controls</span>
+  </div>
+
+</div>
+
+<script src="app.js?v=4"></script>
+</body>
+</html>
